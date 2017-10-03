@@ -1,0 +1,133 @@
+###################################################################################################
+##
+## This file is part of "Pi AV Signal Generator".
+##
+## "Pi AV Signal Generator" is free software : you can redistribute it and / or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## "Pi AV Signal Generator" is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with "Pi AV Signal Generator". If not, see <http://www.gnu.org/licenses/>.
+##
+###################################################################################################
+##
+## Copyright (C) 2009-2017 Markus P Schumann (go4shoe@hotmail.com)
+##
+###################################################################################################
+##
+##      mailto:go4shoe@hotmail.com
+##
+##     $Author: Markus $
+##
+##       $File: //depot/pi/libUtil/Makefile $
+##
+##   $Revision: #1 $
+##
+##       $Date: 2017/09/25 $
+##
+###################################################################################################
+
+###################################################################################################
+# Compiler setting (CC flags)
+###################################################################################################
+CFLAGS+=-DSTANDALONE \
+-D__STDC_CONSTANT_MACROS \
+-D__STDC_LIMIT_MACROS \
+-DTARGET_POSIX -D_LINUX \
+-fPIC \
+-DPIC \
+-D_REENTRANT \
+-D_LARGEFILE64_SOURCE \
+-D_FILE_OFFSET_BITS=64 \
+-U_FORTIFY_SOURCE \
+-Wall \
+-g \
+-DHAVE_LIBOPENMAX=2 \
+-DOMX \
+-DOMX_SKIP64BIT \
+-ftree-vectorize \
+-pipe \
+-DUSE_EXTERNAL_OMX \
+-DHAVE_LIBBCM_HOST \
+-DUSE_EXTERNAL_LIBBCM_HOST \
+-DUSE_VCHIQ_ARM \
+-Wno-psabi
+
+###################################################################################################
+# Linker settings
+###################################################################################################
+
+LDFLAGS+=-L$(SDKSTAGE)/opt/vc/lib/ \
+-lGLESv2 \
+-lEGL \
+-lopenmaxil \
+-lbcm_host \
+-lvcos \
+-lvchiq_arm \
+-lpthread \
+-lrt
+
+###################################################################################################
+# Compiler includes
+###################################################################################################
+
+INCLUDES+=-I$(SDKSTAGE)/opt/vc/include/ \
+-I$(SDKSTAGE)/opt/vc/include/interface/vcos/pthreads \
+-I$(SDKSTAGE)/opt/vc/include/interface/vmcs_host/linux \
+-I$(SDKSTAGE)/opt/vc/include/interface/vmcs_host \
+-I$(SDKSTAGE)/opt/vc/include/interface/vchiq_arm \
+-I./
+
+###################################################################################################
+# Makefile targets
+###################################################################################################
+all: $(OUTPUT_BINARY) $(OUTPUT_LIBRARY)
+
+###################################################################################################
+# Makefile rules
+###################################################################################################
+
+#
+# Object files from C sources (.o from .c)
+#
+%.o: %.c
+	@rm -f $@ 
+	$(CC) $(CFLAGS) $(INCLUDES) -g -c $< -o $@ -Wno-deprecated-declarations
+
+
+#
+# Object files from C++ sources (.o from .cpp)
+#
+%.o: %.cpp
+	@rm -f $@ 
+	$(CXX) $(CFLAGS) $(INCLUDES) -g -c $< -o $@ -Wno-deprecated-declarations
+
+#
+# Binary (executable) from object file (.bin from .o)
+#
+%.bin: $(OBJECT_FILES) $(INCLUDE_FILES)
+	$(CXX) -o $@ -Wl,--whole-archive $(OBJECT_FILES) $(LDFLAGS) -Wl,--no-whole-archive -rdynamic
+
+#
+# Staic library (archive) from object files (.a from .o)
+#
+%.a: $(OBJECT_FILES) $(INCLUDE_FILES)
+	$(AR) r $@ $(OBJECT_FILES)
+
+###################################################################################################
+# Clean
+###################################################################################################
+clean:
+	for i in $(OBJECT_FILES); do \
+	(if test -e "$$i"; then ( rm $$i ); fi ); done
+	@rm -f $(OUTPUT_BINARY) $(OUTPUT_LIBRARY)
+	for d in $(DEPENDS_ON_LIBRARIES); do \
+	(cd $$d; $(MAKE) clean); done
+
+
